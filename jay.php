@@ -1,0 +1,540 @@
+<?php
+session_start();
+
+$host = "sql107.infinityfree.com";
+$user = "if0_42007176";
+$password = "jaybrand1010";
+$database = "if0_42007176_XXX";
+
+$conn = mysqli_connect($host, $user, $password, $database);
+
+if(!$conn){
+    die("Database Connection Failed");
+}
+
+$error = "";
+$success = "";
+
+/* =====================
+   REGISTER
+===================== */
+
+if(isset($_POST['register'])){
+
+    $username = mysqli_real_escape_string($conn, $_POST['username']);
+    $email = mysqli_real_escape_string($conn, $_POST['email']);
+    $password = mysqli_real_escape_string($conn, $_POST['password']);
+
+    $check = mysqli_query($conn, "SELECT * FROM users WHERE email='$email'");
+
+    if(mysqli_num_rows($check) > 0){
+
+        $error = "Email already exists";
+
+    }else{
+
+        $hashed = password_hash($password, PASSWORD_DEFAULT);
+
+        mysqli_query($conn, "INSERT INTO users(username,email,password)
+        VALUES('$username','$email','$hashed')");
+
+        $success = "Registration Successful";
+    }
+}
+
+/* =====================
+   LOGIN
+===================== */
+
+if(isset($_POST['login'])){
+
+    $email = mysqli_real_escape_string($conn, $_POST['email']);
+    $password = mysqli_real_escape_string($conn, $_POST['password']);
+
+    $query = mysqli_query($conn, "SELECT * FROM users WHERE email='$email'");
+
+    if(mysqli_num_rows($query) > 0){
+
+        $row = mysqli_fetch_assoc($query);
+
+        if(password_verify($password, $row['password'])){
+
+            $_SESSION['user'] = $row['username'];
+
+        }else{
+            $error = "Wrong Password";
+        }
+
+    }else{
+        $error = "User Not Found";
+    }
+}
+
+/* =====================
+   ORDER
+===================== */
+
+if(isset($_POST['order'])){
+
+    $username = $_SESSION['user'];
+    $product_name = mysqli_real_escape_string($conn, $_POST['product_name']);
+    $quantity = mysqli_real_escape_string($conn, $_POST['quantity']);
+    $total_price = mysqli_real_escape_string($conn, $_POST['total_price']);
+    $payment_method = mysqli_real_escape_string($conn, $_POST['payment_method']);
+    $address = mysqli_real_escape_string($conn, $_POST['address']);
+
+    mysqli_query($conn, "INSERT INTO orders
+    (username,product_name,quantity,total_price,payment_method,address)
+
+    VALUES
+
+    ('$username','$product_name','$quantity','$total_price','$payment_method','$address')");
+
+    $success = "Order Successfully Placed!";
+}
+
+/* =====================
+   LOGOUT
+===================== */
+
+if(isset($_GET['logout'])){
+
+    session_destroy();
+    header("Location:index.php");
+}
+
+$products = [
+
+[
+"name" => "Chickenjoy",
+"price" => "95",
+"image" => "imgChicken/jbchicken.jpg"
+],
+
+[
+"name" => "Jolly Spaghetti",
+"price" => "75",
+"image" => "imgChicken/spag.jpg"
+],
+
+[
+"name" => "Burger Steak",
+"price" => "85",
+"image" => "imgChicken/steak.jpg"
+],
+
+[
+"name" => "Yumburger",
+"price" => "65",
+"image" => "imgChicken/yum.jpg"
+]
+
+];
+
+?>
+
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Jaybrand Online Delivery</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Poppins',sans-serif;
+}
+
+body{
+background:#fff5f5;
+}
+
+.navbar{
+background:#d60000;
+height:75px;
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:0 30px;
+position:sticky;
+top:0;
+z-index:999;
+}
+
+.logo{
+font-size:28px;
+font-weight:700;
+color:white;
+}
+
+.logout-btn{
+background:white;
+color:#d60000;
+padding:10px 18px;
+text-decoration:none;
+border-radius:10px;
+font-weight:600;
+}
+
+.container{
+min-height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+padding:40px 20px;
+}
+
+.card{
+width:100%;
+max-width:430px;
+background:white;
+padding:35px;
+border-radius:25px;
+box-shadow:0 10px 30px rgba(0,0,0,0.15);
+}
+
+.title{
+text-align:center;
+font-size:30px;
+font-weight:700;
+margin-bottom:20px;
+color:#d60000;
+}
+
+input,
+textarea,
+select{
+width:100%;
+padding:15px;
+margin-top:12px;
+border:1px solid #ddd;
+border-radius:12px;
+font-size:15px;
+}
+
+button{
+width:100%;
+padding:15px;
+margin-top:18px;
+border:none;
+border-radius:12px;
+background:#d60000;
+color:white;
+font-size:16px;
+font-weight:700;
+cursor:pointer;
+transition:0.3s;
+}
+
+button:hover{
+transform:translateY(-3px);
+background:#b80000;
+}
+
+.switch{
+text-align:center;
+margin-top:18px;
+}
+
+.switch a{
+color:#d60000;
+text-decoration:none;
+}
+
+.error{
+background:#ffdddd;
+padding:12px;
+border-radius:10px;
+margin-bottom:15px;
+color:#d60000;
+}
+
+.success{
+background:#ddffdd;
+padding:12px;
+border-radius:10px;
+margin-bottom:15px;
+color:green;
+}
+
+.dashboard{
+padding:40px;
+}
+
+.welcome{
+background:#d60000;
+color:white;
+padding:30px;
+border-radius:25px;
+margin-bottom:30px;
+}
+
+.product-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
+gap:25px;
+}
+
+.product-card{
+background:white;
+padding:20px;
+border-radius:25px;
+box-shadow:0 10px 25px rgba(0,0,0,0.12);
+transition:0.3s;
+}
+
+.product-card:hover{
+transform:translateY(-8px);
+}
+
+.product-card img{
+width:100%;
+height:220px;
+object-fit:contain;
+}
+
+.product-card h2{
+margin-top:15px;
+color:#d60000;
+}
+
+.price{
+font-size:22px;
+font-weight:700;
+margin-top:10px;
+}
+
+.buy-btn{
+margin-top:15px;
+display:block;
+background:#d60000;
+color:white;
+text-align:center;
+padding:14px;
+border-radius:12px;
+font-weight:700;
+cursor:pointer;
+}
+
+#paymentSection{
+margin-top:40px;
+}
+
+.payment-box{
+background:white;
+padding:30px;
+border-radius:25px;
+box-shadow:0 10px 30px rgba(0,0,0,0.15);
+}
+
+</style>
+
+</head>
+<body>
+
+<?php if(isset($_SESSION['user'])): ?>
+
+<div class="navbar">
+
+<div class="logo">
+Jaybrand Delivery
+</div>
+
+<a href="?logout=true" class="logout-btn">
+Logout
+</a>
+
+</div>
+
+<?php endif; ?>
+
+<?php if(!isset($_SESSION['user'])): ?>
+
+<div class="container">
+
+<div class="card">
+
+<div class="title">
+Jollibee Delivery
+</div>
+
+<?php if($error): ?>
+<div class="error"><?php echo $error; ?></div>
+<?php endif; ?>
+
+<?php if($success): ?>
+<div class="success"><?php echo $success; ?></div>
+<?php endif; ?>
+
+<div id="loginForm">
+
+<form method="POST">
+
+<input type="email" name="email" placeholder="Email" required>
+
+<input type="password" name="password" placeholder="Password" required>
+
+<button type="submit" name="login">
+Login
+</button>
+
+</form>
+
+<div class="switch">
+No account?
+<a href="#" onclick="showRegister()">Register</a>
+</div>
+
+</div>
+
+<div id="registerForm" style="display:none;">
+
+<form method="POST">
+
+<input type="text" name="username" placeholder="Username" required>
+
+<input type="email" name="email" placeholder="Email" required>
+
+<input type="password" name="password" placeholder="Password" required>
+
+<button type="submit" name="register">
+Create Account
+</button>
+
+</form>
+
+<div class="switch">
+Already have account?
+<a href="#" onclick="showLogin()">Login</a>
+</div>
+
+</div>
+
+</div>
+</div>
+
+<?php else: ?>
+
+<div class="dashboard">
+
+<div class="welcome">
+<h1>Welcome, <?php echo $_SESSION['user']; ?> 🍔</h1>
+<p>Order your favorite Jollibee meals online.</p>
+</div>
+
+<?php if($success): ?>
+<div class="success"><?php echo $success; ?></div>
+<?php endif; ?>
+
+<div class="product-grid">
+
+<?php foreach($products as $product): ?>
+
+<div class="product-card">
+
+<img src="<?php echo $product['image']; ?>">
+
+<h2><?php echo $product['name']; ?></h2>
+
+<div class="price">
+₱<?php echo $product['price']; ?>
+</div>
+
+<div class="buy-btn"
+onclick="showPayment(
+'<?php echo $product['name']; ?>',
+'<?php echo $product['price']; ?>'
+)">
+Order Now
+</div>
+
+</div>
+
+<?php endforeach; ?>
+
+</div>
+
+<div id="paymentSection" style="display:none;">
+
+<div class="payment-box">
+
+<h2 style="color:#d60000;margin-bottom:20px;">
+Payment & Delivery
+</h2>
+
+<form method="POST">
+
+<input type="hidden" name="product_name" id="productInput">
+<input type="hidden" name="total_price" id="priceInput">
+
+<input type="number" name="quantity" placeholder="Quantity" required>
+
+<input type="text" name="address" placeholder="Delivery Address" required>
+
+<select name="payment_method" required>
+<option value="">Select Payment Method</option>
+<option>GCash</option>
+<option>Maya</option>
+<option>Cash on Delivery</option>
+<option>BDO Online Banking</option>
+</select>
+
+<textarea placeholder="Additional Notes"></textarea>
+
+<h3 id="selectedProduct" style="margin-top:20px;color:#d60000;"></h3>
+
+<button type="submit" name="order">
+Place Order
+</button>
+
+</form>
+
+</div>
+</div>
+
+</div>
+
+<?php endif; ?>
+
+<script>
+
+function showRegister(){
+
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('registerForm').style.display = 'block';
+}
+
+function showLogin(){
+
+    document.getElementById('registerForm').style.display = 'none';
+    document.getElementById('loginForm').style.display = 'block';
+}
+
+function showPayment(product, price){
+
+    document.getElementById('paymentSection').style.display = 'block';
+
+    document.getElementById('selectedProduct').innerHTML =
+    "Product: " + product + "<br>Total Price: ₱" + price;
+
+    document.getElementById('productInput').value = product;
+    document.getElementById('priceInput').value = price;
+
+    window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: 'smooth'
+    });
+}
+
+</script>
+
+</body>
+</html>
